@@ -19,34 +19,58 @@ if(!isset($_GET['id']))
 
 $id = (int)$_GET['id'];
 
-$sql = "SELECT * FROM posts WHERE id=$id";
-$result = mysqli_query($conn, $sql);
+/* Fetch Post Using Prepared Statement */
+$stmt = $conn->prepare("SELECT * FROM posts WHERE id = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
 
-if(mysqli_num_rows($result) == 0)
+$result = $stmt->get_result();
+
+if($result->num_rows == 0)
 {
     die("Post Not Found");
 }
 
-$row = mysqli_fetch_assoc($result);
+$row = $result->fetch_assoc();
 
+/* Update Post */
 if(isset($_POST['update']))
 {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
+    $title = trim($_POST['title']);
+    $content = trim($_POST['content']);
 
-    $sql = "UPDATE posts
-            SET title='$title',
-                content='$content'
-            WHERE id=$id";
+    // Server-side Validation
+    if(empty($title))
+    {
+        die("Title Required");
+    }
 
-    if(mysqli_query($conn, $sql))
+    if(empty($content))
+    {
+        die("Content Required");
+    }
+
+    $stmt = $conn->prepare(
+        "UPDATE posts
+         SET title = ?, content = ?
+         WHERE id = ?"
+    );
+
+    $stmt->bind_param(
+        "ssi",
+        $title,
+        $content,
+        $id
+    );
+
+    if($stmt->execute())
     {
         header("Location:view.php");
         exit();
     }
     else
     {
-        echo "Error: " . mysqli_error($conn);
+        echo "Error Updating Post";
     }
 }
 
@@ -65,21 +89,23 @@ if(isset($_POST['update']))
 
     Title:
     <br>
+
     <input
         type="text"
         name="title"
-        value="<?php echo $row['title']; ?>"
+        value="<?php echo htmlspecialchars($row['title']); ?>"
         required>
 
     <br><br>
 
     Content:
     <br>
+
     <textarea
         name="content"
         rows="5"
         cols="40"
-        required><?php echo $row['content']; ?></textarea>
+        required><?php echo htmlspecialchars($row['content']); ?></textarea>
 
     <br><br>
 

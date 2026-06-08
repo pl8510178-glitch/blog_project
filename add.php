@@ -14,19 +14,34 @@ if(!isset($_SESSION['user']))
 
 if(isset($_POST['publish']))
 {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
+    $title = trim($_POST['title']);
+    $content = trim($_POST['content']);
 
-    $sql = "INSERT INTO posts(title, content)
-            VALUES('$title', '$content')";
+    // Validation
+    if(empty($title))
+    {
+        die("Title Required");
+    }
 
-    if(mysqli_query($conn, $sql))
+    if(empty($content))
+    {
+        die("Content Required");
+    }
+
+    // Prepared Statement
+    $stmt = $conn->prepare(
+        "INSERT INTO posts(title, content) VALUES(?, ?)"
+    );
+
+    $stmt->bind_param("ss", $title, $content);
+
+    if($stmt->execute())
     {
         echo "Post Added Successfully";
     }
     else
     {
-        echo "Error: " . mysqli_error($conn);
+        echo "Error: " . $conn->error;
     }
 }
 

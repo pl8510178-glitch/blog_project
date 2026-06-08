@@ -11,21 +11,26 @@ if(isset($_POST['login']))
     $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    $sql = "SELECT * FROM users WHERE username='$username'";
+    // Prepared Statement
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
 
-    $result = mysqli_query($conn, $sql);
+    $result = $stmt->get_result();
 
-    if(mysqli_num_rows($result) > 0)
+    if($result->num_rows > 0)
     {
-        $row = mysqli_fetch_assoc($result);
+        $row = $result->fetch_assoc();
 
-        // Supports both plain-text and hashed passwords
         if(
             $password === $row['password'] ||
             password_verify($password, $row['password'])
         )
         {
-            $_SESSION['user'] = $username;
+            $_SESSION['user'] = $row['username'];
+
+            // Store Role
+            $_SESSION['role'] = $row['role'];
 
             header("Location: index.php");
             exit();
